@@ -1,0 +1,4 @@
+name: learn_deployment_with_railway
+language: go
+buildCommand: go build -o app
+startCommand: ./app
