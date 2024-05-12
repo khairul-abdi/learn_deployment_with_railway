@@ -1,32 +1,34 @@
 package main
 
 import (
-	"embed"
+	"fmt"
 	"html/template"
-	"log"
 	"net/http"
-	"os"
+	"path"
 )
 
-var resources embed.FS
-
-var t = template.Must(template.ParseFS(resources, "templates/*")) // Ini penting agar path di fly.io terbaca melalui file system
-
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	// Handler endpoint "/" yang mengarang ke template
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		data := map[string]string{
-			"Region": os.Getenv("FLY_REGION"),
+		var filepath = path.Join("views", "index.html")
+		var tmpl, err = template.ParseFiles(filepath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
-		t.ExecuteTemplate(w, "index.html.tmpl", data)
+		var data = map[string]interface{}{
+			"title": "Learning Golang Web",
+			"name":  "Batman",
+		}
+
+		err = tmpl.Execute(w, data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	})
 
-	log.Println("listening on", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("assets"))))
+
+	fmt.Println("server started at localhost:9000")
+	http.ListenAndServe(":9000", nil)
 }
